@@ -66,6 +66,7 @@ def load_deis_mappings(deis_path: str):
     d.columns = ["nombre_comuna", "nombre_ss", "nombre_establecimiento"]
     for c in d.columns:
         d[c] = _clean_text_col(d[c])
+    d = d[d["nombre_ss"].str.contains("Servicio de Salud", case=False, na=False)]
 
     # Comuna -> SS (elige el SS mas frecuente por comuna)
     comuna_ss = (
@@ -132,6 +133,29 @@ def style_pct_bold(df: pd.DataFrame):
     )
 
 
+def enrich_ss_by_level(df: pd.DataFrame, level: str, comuna_ss_map, est_ss_map) -> pd.DataFrame:
+    out = df.copy()
+    if "nombre_ss" in out.columns:
+        out["nombre_ss"] = _clean_text_col(out["nombre_ss"])
+    else:
+        out["nombre_ss"] = pd.NA
+
+    if level == "comuna":
+        if comuna_ss_map is not None and "nombre_comuna" in out.columns:
+            map_df = comuna_ss_map.rename(columns={"nombre_ss": "nombre_ss_deis"})
+            out = out.merge(map_df, on="nombre_comuna", how="left")
+            out["nombre_ss"] = out["nombre_ss"].fillna(out["nombre_ss_deis"])
+            out = out.drop(columns=["nombre_ss_deis"])
+    elif level == "est":
+        if est_ss_map is not None and {"nombre_comuna", "nombre_establecimiento"}.issubset(out.columns):
+            map_df = est_ss_map.rename(columns={"nombre_ss": "nombre_ss_deis"})
+            out = out.merge(map_df, on=["nombre_comuna", "nombre_establecimiento"], how="left")
+            out["nombre_ss"] = out["nombre_ss"].fillna(out["nombre_ss_deis"])
+            out = out.drop(columns=["nombre_ss_deis"])
+
+    return out
+
+
 st.title("Dashboard REM Nutricion")
 st.caption("Selecciona año, nivel, población/rango y estado nutricional.")
 
@@ -156,18 +180,7 @@ except Exception as exc:
     st.stop()
 
 comuna_ss_map, est_ss_map = load_deis_mappings(deis_path)
-
-if level == "comuna":
-    if comuna_ss_map is not None:
-        df = df.merge(comuna_ss_map, on="nombre_comuna", how="left")
-    else:
-        df["nombre_ss"] = pd.NA
-
-if level == "est":
-    if est_ss_map is not None and {"nombre_comuna", "nombre_establecimiento"}.issubset(df.columns):
-        df = df.merge(est_ss_map, on=["nombre_comuna", "nombre_establecimiento"], how="left")
-    else:
-        df["nombre_ss"] = pd.NA
+df = enrich_ss_by_level(df, level, comuna_ss_map, est_ss_map)
 
 groups = detect_groups(df.columns)
 if not groups:
