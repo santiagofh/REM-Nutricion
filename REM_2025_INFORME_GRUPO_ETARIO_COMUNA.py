@@ -1,0 +1,115 @@
+# %% ------------------------------------------------------------
+# 1. Librerías y helpers
+# ---------------------------------------------------------------
+import pandas as pd
+import unicodedata
+
+def _norm(txt: str) -> str:
+    """Normaliza texto (sin tildes, lowercase, sin espacios extra)."""
+    txt = str(txt).strip().lower()
+    return unicodedata.normalize("NFD", txt).encode("ascii", "ignore").decode()
+
+def sumar_cat_por_comuna(df, cat_norm, base, sufijo):
+    """Suma los valores de una categoría nutricional, por comuna."""
+    df_cat  = df[df["Categoria"].apply(_norm) == cat_norm]
+    colsval = df_cat.select_dtypes(include="number").columns.difference(
+        ["Unnamed: 0","IdEstablecimiento","nombre_establecimiento","IdComuna",
+         "nombre_comuna","IdServicio","nombre_ss","CodigoPrestacion","Ano","Mes"]
+    )
+    out = df_cat.groupby("nombre_comuna")[colsval].sum()
+    out[f"{base}{sufijo}"] = out.sum(axis=1)
+    return out[[f"{base}{sufijo}"]]
+
+def sumar_total_por_comuna(df, base):
+    """Suma el total de prestaciones, por comuna."""
+    colsval = df.select_dtypes(include="number").columns.difference(
+        ["Unnamed: 0","IdEstablecimiento","nombre_establecimiento","IdComuna",
+         "nombre_comuna","IdServicio","nombre_ss","CodigoPrestacion","Ano","Mes"]
+    )
+    out = df.groupby("nombre_comuna")[colsval].sum()
+    out[f"{base}_total"] = out.sum(axis=1)
+    return out[[f"{base}_total"]]
+
+# %% ------------------------------------------------------------
+# 2. Cargar REM
+# ---------------------------------------------------------------
+xls_ninos        = pd.ExcelFile("output/REM_2025_P2_SECCION_A_A1_NIÑOS.xlsx")
+xls_gestantes    = pd.ExcelFile("output/REM_2025_P1_SECCION_D_GESTANTES.xlsx")
+xls_nodrizas     = pd.ExcelFile("output/REM_2025_P1_SECCION_D_NODRIZAS.xlsx")
+xls_mayores      = pd.ExcelFile("output/REM_2025_P5_SECCION_B_ADULTO_MAYOR.xlsx")
+xls_adolescentes = pd.ExcelFile("output/REM_2025_P9_SECCION_A_ADOLESCENTES.xlsx")
+
+dfs_ninos = {
+    sh: xls_ninos.parse(sh)
+    for sh in ["1m-4a", "4-6a", "5-9a", "1m-6a"]
+}
+
+bases = [
+    ("1m-4a",        dfs_ninos["1m-4a"]),
+    ("4-6a",         dfs_ninos["4-6a"]),
+    ("5-9a",         dfs_ninos["5-9a"]),
+    ("1m-6a",        dfs_ninos["1m-6a"]),
+    ("Gestantes",    xls_gestantes.parse("Sheet1")),
+    ("Nodrizas",     xls_nodrizas.parse("Sheet1")),
+    ("Persona_Mayor",xls_mayores.parse("Sheet1")),
+    ("Adolescente",  xls_adolescentes.parse("Sheet1")),
+]
+
+categorias = [
+    ("NORMAL",              "normal",              "_NORMAL"),
+    ("RIESGO_DE_DESNUTRIR", "riesgo de desnutrir", "_RIESGO"),
+    ("DESNUTRIDO",          "desnutrido",          "_DESNUTRIDO"),
+    ("SOBREPESO",           "sobrepeso",           "_SOBREPESO"),
+    ("OBESIDAD",            "obesidad",            "_OBESO"),
+]
+
+# %% ------------------------------------------------------------
+# 3. Tabla RESUMEN (totales + categorías + %)
+# ---------------------------------------------------------------
+tabla_final = None
+# Totales
+for base, df in bases:
+    tabla_final = (
+        sumar_total_por_comuna(df, base)
+        if tabla_final is None else
+        tabla_final.join(sumar_total_por_comuna(df, base))
+    )
+
+# Categorías
+for _, cat_norm, sufijo in categorias:
+    frs = [sumar_cat_por_comuna(df, cat_norm, base, sufijo) for base, df in bases]
+    bloque = frs[0]
+    for fr in frs[1:]:
+        bloque = bloque.join(fr)
+    tabla_final = tabla_final.join(bloque)
+
+# Porcentajes
+for base, _ in bases:
+    for _, _, sufijo in categorias:
+        tabla_final[f"{base}_pct{sufijo}"] = (
+            100 * tabla_final[f"{base}{sufijo}"] /
+            tabla_final[f"{base}_total"]
+        )
+
+tabla_final.columns = tabla_final.columns.str.replace(" ", "_", regex=False)
+
+# %% ------------------------------------------------------------
+# 4. Exportar a Excel: una hoja Resumen + una hoja por grupo etario
+# ---------------------------------------------------------------
+with pd.ExcelWriter("output/2025_grupo_etario_por_comuna.xlsx",
+                    engine="xlsxwriter",
+                    datetime_format="yyyy-mm-dd") as writer:
+
+    # Hoja global
+    tabla_final.to_excel(writer, sheet_name="Resumen")
+
+    # Una hoja por grupo etario
+    for base, _ in bases:
+        cols = [c for c in tabla_final.columns if c.startswith(f"{base}")]
+        tabla_final[cols].to_excel(writer, sheet_name=base)
+
+print("OK Archivo '2025_grupo_etario_por_comuna.xlsx' creado con 1+8 hojas.")
+
+
+
+
