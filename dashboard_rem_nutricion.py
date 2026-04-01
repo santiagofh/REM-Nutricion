@@ -14,7 +14,7 @@ st.markdown(
     :root {
         --gob-red: #FE6565;
         --gob-blue: #006FB3;
-        --gob-blue-soft: #EAF4FA;
+        --gob-blue-soft: #F0F2F6;
     }
 
     .stApp h1, .stApp h2, .stApp h3 {
@@ -24,7 +24,7 @@ st.markdown(
 
     .stApp [data-testid="stMetric"] {
         background: linear-gradient(180deg, #ffffff 0%, var(--gob-blue-soft) 100%);
-        border: 1px solid #cfe6f4;
+        border: 1px solid #d9dee8;
         border-radius: 12px;
         padding: 0.5rem 0.75rem;
     }
@@ -40,7 +40,7 @@ st.markdown(
     }
 
     section[data-testid="stSidebar"] {
-        border-right: 1px solid #cfe6f4;
+        border-right: 1px solid #d9dee8;
     }
     </style>
     """,
