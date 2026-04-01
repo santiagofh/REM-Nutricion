@@ -4,15 +4,17 @@ import pandas as pd
 import streamlit as st
 
 
-st.set_page_config(page_title="Dashboard REM Nutricion", layout="wide")
+BASE_DIR = Path(__file__).resolve().parent
+
+st.set_page_config(page_title="Dashboard REM Nutricion", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown(
     """
     <style>
     :root {
-        --gob-red: #D52B1E;
-        --gob-blue: #003DA5;
-        --gob-blue-soft: #EAF2FB;
+        --gob-red: #FE6565;
+        --gob-blue: #006FB3;
+        --gob-blue-soft: #EAF4FA;
     }
 
     .stApp h1, .stApp h2, .stApp h3 {
@@ -22,7 +24,7 @@ st.markdown(
 
     .stApp [data-testid="stMetric"] {
         background: linear-gradient(180deg, #ffffff 0%, var(--gob-blue-soft) 100%);
-        border: 1px solid #d7e6fb;
+        border: 1px solid #cfe6f4;
         border-radius: 12px;
         padding: 0.5rem 0.75rem;
     }
@@ -38,14 +40,19 @@ st.markdown(
     }
 
     section[data-testid="stSidebar"] {
-        border-right: 1px solid #d7e6fb;
+        border-right: 1px solid #cfe6f4;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-BASE_DIR = Path(__file__).resolve().parent
+st.logo(
+    str(BASE_DIR / "assets" / "seremi_sidebar_logo.svg"),
+    size="large",
+    icon_image=str(BASE_DIR / "assets" / "seremi_sidebar_icon.svg"),
+)
+
 DEFAULT_OUTPUT_DIR = BASE_DIR / "output"
 DEFAULT_DEIS_PATH = BASE_DIR / "data_DEIS" / "20250424_est_deis.csv"
 
