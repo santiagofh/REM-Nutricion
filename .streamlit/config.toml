@@ -7,6 +7,9 @@ port = 8501
 [browser]
 gatherUsageStats = false
 
+[client]
+showSidebarNavigation = true
+
 [theme]
 base = "light"
 primaryColor = "#D52B1E"

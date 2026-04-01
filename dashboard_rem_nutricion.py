@@ -6,6 +6,45 @@ import streamlit as st
 
 st.set_page_config(page_title="Dashboard REM Nutricion", layout="wide")
 
+st.markdown(
+    """
+    <style>
+    :root {
+        --gob-red: #D52B1E;
+        --gob-blue: #003DA5;
+        --gob-blue-soft: #EAF2FB;
+    }
+
+    .stApp h1, .stApp h2, .stApp h3 {
+        color: var(--gob-blue);
+        font-weight: 700;
+    }
+
+    .stApp [data-testid="stMetric"] {
+        background: linear-gradient(180deg, #ffffff 0%, var(--gob-blue-soft) 100%);
+        border: 1px solid #d7e6fb;
+        border-radius: 12px;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .stApp button[kind="primary"] {
+        background-color: var(--gob-red);
+        border-color: var(--gob-red);
+    }
+
+    .stApp button[kind="secondary"] {
+        border-color: var(--gob-blue);
+        color: var(--gob-blue);
+    }
+
+    section[data-testid="stSidebar"] {
+        border-right: 1px solid #d7e6fb;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = BASE_DIR / "output"
 DEFAULT_DEIS_PATH = BASE_DIR / "data_DEIS" / "20250424_est_deis.csv"
@@ -131,6 +170,37 @@ def style_pct_bold(df: pd.DataFrame):
     return styler.apply(_style_col, axis=0).set_table_styles(
         [{"selector": "th", "props": [("font-weight", "700")]}]
     )
+
+
+def prettify_column_label(label: str) -> str:
+    text = str(label).strip()
+    explicit_map = {
+        "nombre_ss": "Servicio de Salud",
+        "nombre_comuna": "Comuna",
+        "nombre_establecimiento": "Establecimiento",
+    }
+    if text in explicit_map:
+        return explicit_map[text]
+    return text
+
+
+def build_column_config(df: pd.DataFrame):
+    config = {}
+    for col in df.columns:
+        label = prettify_column_label(col)
+        if col == "nombre_ss":
+            config[col] = st.column_config.TextColumn(label, width="large", pinned=True)
+        elif col == "nombre_comuna":
+            config[col] = st.column_config.TextColumn(label, width="medium", pinned=True)
+        elif col == "nombre_establecimiento":
+            config[col] = st.column_config.TextColumn(label, width="large", pinned=True)
+        elif str(col).endswith("(%)"):
+            config[col] = st.column_config.NumberColumn(label, width="small", format="%.2f%%")
+        elif "(N)" in str(col) or "Total bajo control" in str(col):
+            config[col] = st.column_config.NumberColumn(label, width="small")
+        else:
+            config[col] = st.column_config.TextColumn(label, width="medium")
+    return config
 
 
 def enrich_ss_by_level(df: pd.DataFrame, level: str, comuna_ss_map, est_ss_map) -> pd.DataFrame:
@@ -284,7 +354,13 @@ with right:
         st.metric("Total bajo control (suma)", f"{int(total_sum):,}".replace(",", "."))
 
 st.subheader("Tabla")
-st.dataframe(style_pct_bold(display), use_container_width=True, hide_index=True)
+display_df = display.rename(columns={c: prettify_column_label(c) for c in display.columns})
+st.dataframe(
+    style_pct_bold(display_df),
+    width="stretch",
+    hide_index=True,
+    column_config=build_column_config(display_df),
+)
 
 st.subheader("Resumen rapido (porcentajes ponderados)")
 rows = []
@@ -304,7 +380,12 @@ for g in selected_groups:
 
 if rows:
     summary_df = pd.DataFrame(rows)
-    st.dataframe(style_pct_bold(summary_df), use_container_width=True, hide_index=True)
+    st.dataframe(
+        style_pct_bold(summary_df),
+        width="stretch",
+        hide_index=True,
+        column_config=build_column_config(summary_df),
+    )
 else:
     st.info("No hay suficientes columnas para calcular ponderados.")
 
@@ -312,7 +393,7 @@ download_suffix = f"{group_choice}_{state_choice}".replace(" ", "_")
 
 excel_buffer = BytesIO()
 with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
-    display.to_excel(writer, index=False, sheet_name="tabla_filtrada")
+    display_df.to_excel(writer, index=False, sheet_name="tabla_filtrada")
 excel_buffer.seek(0)
 
 st.download_button(
