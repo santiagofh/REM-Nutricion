@@ -15,6 +15,18 @@ st.markdown(
         color: #006FB3;
         font-weight: 700;
     }
+    .provisional-badge {
+        display: inline-block;
+        margin: 0.15rem 0 0.6rem 0;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background: #FFF3CD;
+        border: 1px solid #F2C94C;
+        color: #7A4D00;
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -206,7 +218,17 @@ def enrich_ss_by_level(df: pd.DataFrame, level: str, comuna_ss_map, est_ss_map) 
     return out
 
 
+def render_provisional_badge():
+    st.markdown(
+        """
+        <div class="provisional-badge">Datos Provisorios</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 st.title("Dashboard REM Nutricion")
+render_provisional_badge()
 st.caption("Selecciona año, nivel, población/rango y estado nutricional.")
 
 output_dir = str(DEFAULT_OUTPUT_DIR)
