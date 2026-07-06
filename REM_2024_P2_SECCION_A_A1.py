@@ -23,7 +23,7 @@ codigos_de_interes = [
 "P2501801",
 ]
 
-path = r"C:\Users\fariass\OneDrive - SUBSECRETARIA DE SALUD PUBLICA\Escritorio\DATA\REM\REM_2024\Datos\SerieP2024.csv"
+path = r"D:\DATA\REM\REM_2024\Datos\SerieP2024.csv"
 
 chunk_size = 50000  
 filtered_data = pd.DataFrame()
