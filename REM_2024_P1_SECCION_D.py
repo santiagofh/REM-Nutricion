@@ -23,7 +23,7 @@ for chunk in pd.read_csv(path, sep=";", chunksize=chunk_size):
     filtered_data = pd.concat([filtered_data, filtered_chunk])
 #%%
 # Cargar base diaria de establecimientos (último CSV disponible)
-base_est = r"C:\Users\fariass\OneDrive - SUBSECRETARIA DE SALUD PUBLICA\Escritorio\DATA\ESTABLECIMIENTOS"
+base_est = r"D:\DATA\ESTABLECIMIENTOS"
 files_est = sorted(glob.glob(os.path.join(base_est, "establecimientos_*.csv")))
 if not files_est:
     raise FileNotFoundError(f"No se encontraron CSV en {base_est}")
