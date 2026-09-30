@@ -236,7 +236,7 @@ deis_path = str(DEFAULT_DEIS_PATH)
 
 with st.sidebar:
     st.header("Filtros")
-    year = st.selectbox("Año", [2024, 2025], index=1)
+    year = st.selectbox("Año", [2024, 2025, 2026], index=1)
     level_map = {
         "Servicio de Salud": "SS",
         "Comuna": "comuna",
