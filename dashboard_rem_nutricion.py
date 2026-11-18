@@ -41,6 +41,8 @@ st.logo(
 DEFAULT_OUTPUT_DIR = BASE_DIR / "output"
 DEFAULT_DEIS_PATH = BASE_DIR / "data_DEIS" / "20250424_est_deis.csv"
 
+LOOKER_STUDIO_URL = "https://datastudio.google.com/reporting/f9e7a1ca-474e-46b7-8364-a5e5f0a4f079/page/hrSeD"
+
 CAT_ORDER = ["NORMAL", "RIESGO", "DESNUTRIDO", "SOBREPESO", "OBESO"]
 CAT_LABELS = {
     "NORMAL": "Normal",
@@ -230,6 +232,8 @@ def render_provisional_badge():
 st.title("Dashboard REM Nutricion")
 render_provisional_badge()
 st.caption("Selecciona año, nivel, población/rango y estado nutricional.")
+
+st.link_button("Ver reporte en Looker Studio", LOOKER_STUDIO_URL)
 
 output_dir = str(DEFAULT_OUTPUT_DIR)
 deis_path = str(DEFAULT_DEIS_PATH)
